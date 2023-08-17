@@ -71,7 +71,7 @@ ggplot(combined_data, aes(x = week_start_date, y = total_cases, color = city)) +
 ```
 
 # 5. Create forecasting models
-(Seasonal Naive, ETS, ARIMA, Dynamic Regression)
+(ETS, ARIMA, Neural Network)
 
 ## Model 1: ETS 
 ### San Juan
