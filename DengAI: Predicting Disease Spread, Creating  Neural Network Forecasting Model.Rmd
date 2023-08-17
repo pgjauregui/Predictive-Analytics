@@ -1,5 +1,5 @@
 ---
-title: "Forecasting Final"
+title: "DengAI: Predicting Disease Spread, Creating  Neural Network Forecasting Model"
 author: "Phil Jauregui"
 date: "`r Sys.Date()`"
 output: html_document
