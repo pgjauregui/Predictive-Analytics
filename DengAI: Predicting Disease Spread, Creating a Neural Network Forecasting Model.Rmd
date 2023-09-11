@@ -150,14 +150,9 @@ iq_nnetar <- nnetar(iq_total_cases, repeats = 25, size = 18, decay = 0.1, linout
 plot(forecast(iq_nnetar, h = 156), main = "Total Dengue Cases (Iquitos)", xlab = "Weeks", ylab = "Total Cases")
 ```
 
-## Model 4: Dynamic Regression
-
-I am aiming to build a dynamic regression model.
-Accordingly, to select variables as external regressorsm I want to examine the correlations of the feature variables with total cases.
-
 ## Examine Correlations
 ```{r}
-# construct a correlation matrix
+# Construct a correlation matrix
 m_sj_train_features <- data.matrix(sj)
 m_sj_train_features <- cor(x = m_sj_train_features, use = 'complete.obs', method = 'pearson')
 
@@ -200,20 +195,6 @@ ggplot(df_iq_train_features, aes(x = reorder(rownames(df_iq_train_features), -to
 Interested in those variables that have r >= .2 in both cities, I would select:
 reanalysis_specific_humidity_g_per_kg 
 and reanalysis_dew_point_temp_k as external regressors.
-
-However, I had trouble in constructing this model as seen in the code below:
-
-### San Juan
-```{r}
-sj_tsibble<-as_tsibble(sj)
-sjdynamicregression <- auto.arima(sj_tsibble, xreg = reanalysis_specific_humidity_g_per_kg, reanalysis_dew_point_temp_k)
-```
-
-### Iquitos
-```{r}
-iq_tsibble<-as_tsibble(iq)
-iqdynamicregression <- auto.arima(iq_tsibble, xreg = reanalysis_specific_humidity_g_per_kg, reanalysis_dew_point_temp_k)
-```
 
 # 6. Evaluate the Models
 
