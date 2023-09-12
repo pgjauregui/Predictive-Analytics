@@ -1,5 +1,5 @@
 ---
-title: "DengAI: Predicting Disease Spread, Creating  Neural Network Forecasting Model"
+title: "DengAI: Predicting Disease Spread Submission"
 author: "Phil Jauregui"
 date: "`r Sys.Date()`"
 output: html_document
@@ -71,7 +71,7 @@ ggplot(combined_data, aes(x = week_start_date, y = total_cases, color = city)) +
 ```
 
 # 5. Create forecasting models
-(ETS, ARIMA, Neural Network)
+(Seasonal Naive, ETS, ARIMA, Dynamic Regression)
 
 ## Model 1: ETS 
 ### San Juan
@@ -79,7 +79,7 @@ ggplot(combined_data, aes(x = week_start_date, y = total_cases, color = city)) +
 # San Juan
 sj_ets <- ets(sjTS)
 
-forecast(sjets, h=52)
+forecast(sj_ets, h=52)
 sjf1 <- forecast(sj_ets, h=52)
 autoplot(sjf1) + xlab("Week") + ylab("Total Cases of Dengue Fever") + ggtitle("Forecast of Total Dengue Cases in San Juan (ETS)")
 ```
@@ -150,9 +150,14 @@ iq_nnetar <- nnetar(iq_total_cases, repeats = 25, size = 18, decay = 0.1, linout
 plot(forecast(iq_nnetar, h = 156), main = "Total Dengue Cases (Iquitos)", xlab = "Weeks", ylab = "Total Cases")
 ```
 
+## Proposed Model: Dynamic Regression
+
+If I were to build a dynamic regression model, I would want to first select variables as extermal regressors.
+To select variables as external regressors, I want to examine the correlations of the feature variables with the number of total cases.
+
 ## Examine Correlations
 ```{r}
-# Construct a correlation matrix
+# construct a correlation matrix
 m_sj_train_features <- data.matrix(sj)
 m_sj_train_features <- cor(x = m_sj_train_features, use = 'complete.obs', method = 'pearson')
 
@@ -194,7 +199,9 @@ ggplot(df_iq_train_features, aes(x = reorder(rownames(df_iq_train_features), -to
 
 Interested in those variables that have r >= .2 in both cities, I would select:
 reanalysis_specific_humidity_g_per_kg 
-and reanalysis_dew_point_temp_k as external regressors.
+and 
+reanalysis_dew_point_temp_k as external regressors.
+as external regressors in a dynamic regression model.
 
 # 6. Evaluate the Models
 
@@ -233,6 +240,10 @@ accuracy(iq_nnetar)
 
 ## 7. Generate the submission
 
+Examining accuracy metrics for the models, we see that the neural network models outperformed the other models, displaying the lowest RMSE and MAE values (8.7 and 6.1 for San Juan and 3.36 and 2.44 for Iquitos).
+
+Accordingly, I moved forward with the neural network model and used that forecasting model as my submission to DrivenData @ https://www.drivendata.org/competitions/44/dengai-predicting-disease-spread/page/80/ 
+
 ```{r}
 a <- forecast(sj_nnetar, h = 260)
 sj_nnetar_solution <- data.frame(submissions[1:260, -4], total_cases = round(a$mean))
@@ -244,4 +255,3 @@ nnetar_solution <- bind_rows(sj_nnetar_solution, iq_nnetar_solution)
 
 write.csv(nnetar_solution, file = 'DengAI_nnetar_predicted_solution.csv', row.names = FALSE)
 ```
-
