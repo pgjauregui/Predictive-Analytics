@@ -1,5 +1,5 @@
 # Predictive-Analytics
 
-Here you will find some of my work in R regarding predictive analytics and forecasting.
+Here you will find some of my work in R involving predictive analytics and forecasting.
 
-Files are R Markdowns.
+Files in this repository are R Markdowns.
