@@ -1,0 +1,143 @@
+---
+title: "Forecasting Discussion 1"
+author: "Phil Jauregui"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# 1. Load Packages
+```{r}
+library(tidyverse)
+library(fpp3)
+library(tsibble)
+library(tsibbledata)
+library(lubridate)
+library(stats)
+library(forecast)
+```
+
+# 2. Read in (Global Temp) Data
+```{r}
+# I am using Global Land Temperatures by State data
+d <- read.csv("https://query.data.world/s/axgb3nwemqkewpn2xkrv3f36fg2tyi?dws=00000", header=TRUE, stringsAsFactors=TRUE);
+
+# Here, I'm filtering for California
+d<-d|>filter(State == "California")
+```
+
+# 3. Format as a 5 year time series
+```{r}
+d <- d %>%
+  mutate(Date = yearmonth(as.character(dt))) %>%
+  as_tsibble(index = Date) %>%
+  filter(year(Date) >= 2006 & year(Date) <= 2010)
+# I'm focusing on 5 years of data: 2006 - 2010.
+```
+
+```{r}
+d <- d[, c(2, 6)]
+```
+
+# 4. Plot the overall data
+
+```{r}
+d %>%
+  autoplot() +
+  labs(y = "Average Temperature (Celsius)", x = "Date", title = "Average Temperature in California") +
+  geom_smooth(method = "lm", se = FALSE, color = "red")
+# Plotting Overall data
+d %>% gg_season(AverageTemperature) +
+  labs(y = "Average Temperature (Celsius)", x = "Date", title = "Average Temperature in California")
+# Plotting Seasonal fluctuation
+```
+Plot an additive decomposition of the data:
+```{r}
+additivedecomposed <- d %>%
+     select(Date, AverageTemperature) %>%
+     stl(t.window = 12, s.window = "periodic")
+ 
+plot(additivedecomposed)
+```
+# 5. Identify training and test sets
+```{r}
+train <-head(d,48)
+test <- tail(d, 12)
+```
+
+# 6. Build SNAIVE, ARIMA, ETS, and Ensemble Models 
+```{r}
+train.ts <- ts(train$AverageTemperature,frequency = 12, start = c(2006,1))
+
+mySNAIVE=train |>model(Seasonal_Naive_Model=SNAIVE(AverageTemperature))
+myarima=auto.arima(train)
+myets=ets(train.ts)
+myensemble=train |>model(Ensemble_Model=(ETS(AverageTemperature)+ARIMA(AverageTemperature))/2)
+```
+
+```{r}
+mypredict1=forecast(mySNAIVE, h=12)
+mypredict2=forecast(myarima, 12)
+mypredict3=forecast(myets, 12)
+mypredict4=forecast(myensemble, h=12)
+```
+
+
+# 7. Evaluate the Models
+
+## SNAIVE
+```{r}
+actual_values <- test$AverageTemperature
+snaive_forecast_values <- mypredict1$.mean
+snaive_mae <- mean(abs(forecast_values - actual_values))
+snaive_rmse <- sqrt(mean((forecast_values - actual_values)^2))
+snaive_mape <- mean(abs((forecast_values - actual_values) / actual_values)) * 100
+
+evaluation <- data.frame(MAE = mae, RMSE = rmse, MAPE = mape)
+print(evaluation)
+```
+## ARIMA
+```{r}
+acc2=accuracy(mypredict2, test$AverageTemperature)
+print(acc2)
+checkresiduals(myarima)
+```
+
+## ETS
+```{r}
+acc3=accuracy(mypredict3, test$AverageTemperature)
+print(acc3)
+checkresiduals(myets)
+```
+
+## Ensemble
+```{r}
+mypredict4 <- forecast(myensemble, h = 12)
+# Convert the forecasted values to a time series object
+forecast_values <- ts(mypredict4$.mean, frequency = 12, start = c(2010, 1))
+# Convert the actual values to a time series object
+actual_values <- ts(test$AverageTemperature, frequency = 12, start = c(2010, 1))
+# Calculate accuracy measures for the forecast
+acc4 <- accuracy(forecast_values, actual_values)
+# Print the accuracy measures
+print(acc4)
+```
+
+# 8. Plot the Models
+ARIMA
+```{r}
+autoplot(mypredict2)+labs(y="Average Temperature (Celsius)")
+```
+
+ETS
+```{r}
+autoplot(mypredict3)+labs(y="Average Temperature (Celsius)")
+```
+
+Overall Models
+```{r}
+fit=train |>model(ARIMA_Model=ARIMA(AverageTemperature),
+                  Seasonal_Naive_Model=SNAIVE(AverageTemperature),
+                  ETS_Model=ETS(AverageTemperature),
+                  Ensemble_Model=(SNAIVE(AverageTemperature)+ETS(AverageTemperature)+ARIMA(AverageTemperature))/3)
+
+fit |> forecast(test) |> autoplot(test)+labs(y="Average Temperature (Celsius)", title = "Average Temperature in California")
+```
