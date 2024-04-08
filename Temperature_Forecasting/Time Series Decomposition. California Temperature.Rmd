@@ -20,10 +20,10 @@ library(fpp3)
 # Reading in Global Land Temperatures by State.csv, 
 # Available from data.world @ [Global Land Temperatures by State](https://data.world/environmentdata/climate-change-earth-surface/workspace/file?filename=GlobalLandTemperatures%2FGlobalLandTemperaturesByState.csv)
 # I've pre-filtered this file for California data
+d <- read.csv("https://query.data.world/s/axgb3nwemqkewpn2xkrv3f36fg2tyi?dws=00000", header=TRUE, stringsAsFactors=TRUE);
 
-
-# Update file location for other users' local machine:
-d <- read.csv("C:/Users/jaure/Downloads/GlobalLandTemperatures_GlobalLandTemperatures_California.csv", stringsAsFactors=TRUE)
+# Here, I'm filtering for California
+d<-d|>filter(State == "California")
 ```
 
 # 3. Format as a time series
