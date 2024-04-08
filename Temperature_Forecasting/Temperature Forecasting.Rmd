@@ -1,5 +1,5 @@
 ---
-title: "Forecasting Discussion 1"
+title: "Forecasting Temperature (SNAIVE, ARIMA, ETS, Ensemble)"
 author: "Phil Jauregui"
 date: "`r Sys.Date()`"
 output: html_document
@@ -17,7 +17,7 @@ library(forecast)
 
 # 2. Read in (Global Temp) Data
 ```{r}
-# I am using Global Land Temperatures by State data
+# I am using Global Land Temperatures by State
 d <- read.csv("https://query.data.world/s/axgb3nwemqkewpn2xkrv3f36fg2tyi?dws=00000", header=TRUE, stringsAsFactors=TRUE);
 
 # Here, I'm filtering for California
@@ -40,27 +40,32 @@ d <- d[, c(2, 6)]
 # 4. Plot the overall data
 
 ```{r}
+# Plotting Overall temperature data over 5 years
 d %>%
   autoplot() +
   labs(y = "Average Temperature (Celsius)", x = "Date", title = "Average Temperature in California") +
   geom_smooth(method = "lm", se = FALSE, color = "red")
-# Plotting Overall data
+# Here we see some clear seasonality, but I wanted to zero in to this so I later use the gg_season function
+
+# Plotting Seasonal fluctuation in temperature over the 5 years
 d %>% gg_season(AverageTemperature) +
   labs(y = "Average Temperature (Celsius)", x = "Date", title = "Average Temperature in California")
-# Plotting Seasonal fluctuation
 ```
+As one would expect, we have seasonality wherein temperatures rise in the summer and fall in the winter. 	
+
 Plot an additive decomposition of the data:
 ```{r}
-additivedecomposed <- d %>%
-     select(Date, AverageTemperature) %>%
-     stl(t.window = 12, s.window = "periodic")
- 
+additivedecomposed <- stl(d, t.window = 12, s.window = "periodic")
 plot(additivedecomposed)
 ```
+We can see strong seasonality. 
+Somewhat surprisingly, there’s a non-linear trend that doesn't seem to be clearly rising, despite reports of record heatwaves throughout California -- the short time span of this analysis is notable here.
+
 # 5. Identify training and test sets
 ```{r}
 train <-head(d,48)
 test <- tail(d, 12)
+#  I build a training set based on the first 4 years of data and have the 5th year serve as my test set.
 ```
 
 # 6. Build SNAIVE, ARIMA, ETS, and Ensemble Models 
@@ -71,9 +76,8 @@ mySNAIVE=train |>model(Seasonal_Naive_Model=SNAIVE(AverageTemperature))
 myarima=auto.arima(train)
 myets=ets(train.ts)
 myensemble=train |>model(Ensemble_Model=(ETS(AverageTemperature)+ARIMA(AverageTemperature))/2)
-```
+# I constructed a seasonal naive, ARIMA, ETS, and ensemble model to forecast the data. 
 
-```{r}
 mypredict1=forecast(mySNAIVE, h=12)
 mypredict2=forecast(myarima, 12)
 mypredict3=forecast(myets, 12)
@@ -81,44 +85,41 @@ mypredict4=forecast(myensemble, h=12)
 ```
 
 
-# 7. Evaluate the Models
+# 7. Evaluate the Models' Accuracy
 
 ## SNAIVE
 ```{r}
-actual_values <- test$AverageTemperature
-snaive_forecast_values <- mypredict1$.mean
-snaive_mae <- mean(abs(forecast_values - actual_values))
-snaive_rmse <- sqrt(mean((forecast_values - actual_values)^2))
-snaive_mape <- mean(abs((forecast_values - actual_values) / actual_values)) * 100
-
-evaluation <- data.frame(MAE = mae, RMSE = rmse, MAPE = mape)
-print(evaluation)
+evaluation_snaive <- data.frame(
+  MAE = mean(abs(mypredict1$.mean - test$AverageTemperature)),
+  RMSE = sqrt(mean((mypredict1$.mean - test$AverageTemperature)^2)),
+  MAPE = mean(abs((mypredict1$.mean - test$AverageTemperature) / test$AverageTemperature)) * 100)
+cat("SNAIVE Model Evaluation:\n")
+print(evaluation_snaive)
 ```
+
 ## ARIMA
 ```{r}
-acc2=accuracy(mypredict2, test$AverageTemperature)
-print(acc2)
+acc_arima <- accuracy(mypredict2, test$AverageTemperature)
+print("ARIMA Accuracy:")
+print(acc_arima)
 checkresiduals(myarima)
 ```
 
 ## ETS
 ```{r}
-acc3=accuracy(mypredict3, test$AverageTemperature)
-print(acc3)
+acc_ets <- accuracy(mypredict3, test$AverageTemperature)
+print("ETS Accuracy:")
+print(acc_ets)
 checkresiduals(myets)
 ```
 
 ## Ensemble
 ```{r}
-mypredict4 <- forecast(myensemble, h = 12)
-# Convert the forecasted values to a time series object
 forecast_values <- ts(mypredict4$.mean, frequency = 12, start = c(2010, 1))
-# Convert the actual values to a time series object
 actual_values <- ts(test$AverageTemperature, frequency = 12, start = c(2010, 1))
-# Calculate accuracy measures for the forecast
-acc4 <- accuracy(forecast_values, actual_values)
-# Print the accuracy measures
-print(acc4)
+acc_ensemble <- accuracy(forecast_values, actual_values)
+print("Ensemble Accuracy:")
+print(acc_ensemble)
 ```
 
 # 8. Plot the Models
@@ -141,3 +142,7 @@ fit=train |>model(ARIMA_Model=ARIMA(AverageTemperature),
 
 fit |> forecast(test) |> autoplot(test)+labs(y="Average Temperature (Celsius)", title = "Average Temperature in California")
 ```
+Analysis: examining the overall plot, it's difficult to determine which model outperformed the others; but looking at the accuracy metrics, we see that the ensemble model outperformed all others on MAPE (mean absolute percentage error) and MAE (mean absolute error).
+Notably, the ETS model outperformed the ensemble model on RMSE (root-mean-square error), but overall it appears the ensemble model has less error. The two models, though, are quite close in the performance.
+
+Deeper analysis and exploration can be found on a [poster] (https://github.com/pgjauregui/Predictive-Analytics/blob/main/Temperature_Forecasting/Temperature%20Forecasting%20Poster%20.pdf) available on my GitHub.
