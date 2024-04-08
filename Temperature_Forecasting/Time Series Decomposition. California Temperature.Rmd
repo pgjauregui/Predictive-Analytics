@@ -19,7 +19,6 @@ library(fpp3)
 ```{r}
 # Reading in Global Land Temperatures by State.csv, 
 # Available from data.world @ [Global Land Temperatures by State](https://data.world/environmentdata/climate-change-earth-surface/workspace/file?filename=GlobalLandTemperatures%2FGlobalLandTemperaturesByState.csv)
-# I've pre-filtered this file for California data
 d <- read.csv("https://query.data.world/s/axgb3nwemqkewpn2xkrv3f36fg2tyi?dws=00000", header=TRUE, stringsAsFactors=TRUE);
 
 # Here, I'm filtering for California
