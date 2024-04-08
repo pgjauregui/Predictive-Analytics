@@ -1,5 +1,5 @@
 ---
-title: "Forecasting Discussion 1"
+title: "Time Series Decomposition"
 author: "Phil Jauregui"
 date: "`r Sys.Date()`"
 output: html_document
@@ -9,18 +9,21 @@ Below is an exercise in time series decomposition that demonstrates an upward tr
 # 1. Load Packages
 ```{r}
 library(tidyverse)
-library(fpp3)
 library(tsibble)
 library(tsibbledata)
 library(lubridate)
-library(stats)
+library(fpp3)
 ```
 
 # 2. Read in (Global Temp) Data
 ```{r}
-d <- read.csv("C:/Users/jaure/Downloads/GlobalLandTemperatures_GlobalLandTemperaturesByState.csv", stringsAsFactors=TRUE)
-# Here, I'm filtering for California
-d<-d|>filter(State == "California")
+# Reading in Global Land Temperatures by State.csv, 
+# Available from data.world @ [Global Land Temperatures by State](https://data.world/environmentdata/climate-change-earth-surface/workspace/file?filename=GlobalLandTemperatures%2FGlobalLandTemperaturesByState.csv)
+# I've pre-filtered this file for California data
+
+
+# Update file location for other users' local machine:
+d <- read.csv("C:/Users/jaure/Downloads/GlobalLandTemperatures_GlobalLandTemperatures_California.csv", stringsAsFactors=TRUE)
 ```
 
 # 3. Format as a time series
@@ -36,20 +39,10 @@ filtered_data <- d %>%
 ```{r}
 filtered_data %>%
   autoplot(AverageTemperature) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
   labs(y = "Average Temperature (Celsius)", x = NULL)
 ```
-Here, we see a very noisy plot wherein it's hard to detect trends. 
-To better visualize any trend in the data, I'll add a trendline using the "geom_smooth" function:
-```{r}
-plot <- filtered_data %>%
-     ggplot(aes(x = YearMonth, y = AverageTemperature)) +
-     geom_line() +
-     geom_smooth(method = "lm", se = FALSE, color = "red") +
-     labs(y = "Average Temperature (Celsius)", x = NULL)
- 
-print(plot)
-```
-Here we see a slight upward trend in average temperatures in California (this says nothing if the upward trend is statistically significants)
+Here we see a very noisy plot, but there does appear to be a slight upward trend in average temperatures in California (this says nothing if the upward trend is statistically significant).
 
 # 5. Time Series Decomposition
 
@@ -62,4 +55,4 @@ additivedecomposed <- filtered_data %>%
 plot(additivedecomposed)
 ```
 Here we can more clearly see an upward trend in the 100 year span from 1913-2013.
-[I opt to use additive rather than multiplicative decomposition, as additive is recommended if the seasonal component remains similar across all time levels, which appears to be the case in the plot] 
+[I opt to use additive rather than multiplicative decomposition, as additive is recommended if the seasonal component remains similar across all time levels, which appears to be the case in the plot].
